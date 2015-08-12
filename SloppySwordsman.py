@@ -1,8 +1,12 @@
 import pygame
+
+
 import time
 import random
 import os
 import pickle
+
+
 import sys
 import fileinput
 
@@ -16,6 +20,7 @@ white = (255,255,255)
 red = (222,41,16)
 green = (0,255,0)
 gold = (255, 222, 0)
+gold2 = (198, 191, 0)
 gameDisplay = pygame.display.set_mode((display_width,display_height))
 car_width = 40
 car_height = 54
@@ -30,6 +35,7 @@ pygame.display.set_caption('Ricey : Sloppy Swordsman')
 townbackground = pygame.image.load(os.path.join("data", 'town.png'))
 clock = pygame.time.Clock()
 expo = pygame.image.load(os.path.join("data", 'expo.png'))
+controls = pygame.image.load(os.path.join("data", 'controls.png'))
 alert = pygame.image.load(os.path.join("data", 'alert.png'))
 
 
@@ -47,11 +53,14 @@ AD = False
 DD = False
 SD = False
 pygame.mixer.music.load(os.path.join("data", 'town.mp3'))
+disable = False
+global disable
 pygame.mixer.music.play(-1)
 afterpause = False
 message = pygame.image.load(os.path.join("data", 'message.png'))
 still = pygame.image.load(os.path.join("data", 'back1.png'))
 layer = pygame.image.load(os.path.join("data", 'backgroundlayer.png'))
+layer2 = pygame.image.load(os.path.join("data", 'backgroundlayer2.png'))
 oldguyimg = pygame.image.load(os.path.join("data", 'oldguy.png'))
 
 
@@ -68,11 +77,12 @@ emperorimg=  pygame.image.load(os.path.join("data", 'emperor1.png'))
 emperorimg2= pygame.image.load(os.path.join("data", 'emperor2.png'))
 battleemperor = pygame.image.load(os.path.join("data", 'battleemperor.png'))
 inventoryimg = pygame.image.load(os.path.join("data", 'inventory.png'))
-germantown = pygame.image.load(os.path.join("data", 'germantown.png'))
+dead = pygame.image.load(os.path.join("data", 'rip.png'))
 
 
-enemydict = {'Health':20,'Maxhealth':20,'Attackmin':4,'Attackmax': 10}
-emperordict = {'Health':35,'Maxhealth':35,'Attackmin':8,'Attackmax': 10}
+
+enemydict = {'Health':20,'Maxhealth':20,'Attackmin':4,'Attackmax': 10,'Goldmin':5,'Goldmax':10}
+emperordict = {'Health':35,'Maxhealth':35,'Attackmin':8,'Attackmax': 10,'Goldmin':10,'Goldmax':15}
 
 savereadis = False
 playerreadis = False
@@ -89,7 +99,7 @@ except:
     print "Savefile not found."
     print "Creating Savefile...."
     savefile = ['Placeholder']
-    playerfile = {"X":360,"Y":450,"Health":30,'Maxhealth':30,"Healthafterdojo":50,"Attackmin":5,"Attackmax":15,"Potions":0,'Gold':0}
+    playerfile = {"X":360,"Y":450,"Health":30,'Maxhealth':30,"Healthafterdojo":50,"Attackmin":5,"Attackmax":15,"Potions":0,'Gold':0,'town':1}
     
     
     with open('save.pkl','wb') as outfile:
@@ -146,18 +156,38 @@ def message_display(text,y,font,size,color,x = None):
         TextRect.center=((x),(y))
     gameDisplay.blit(TextSurf, TextRect)
 
+def button2(msg,x,y,w,h,ic,ac,action=None):
+    mouse = pygame.mouse.get_pos()
+    click = pygame.mouse.get_pressed()
 
 
-    
+    if x+w > mouse[0] > x and y+h > mouse[1] > y:
+        pygame.draw.rect(gameDisplay, ac,(x,y,w,h))
+        for event in pygame.event.get():
+
+            click = pygame.mouse.get_pressed()
+            if click[0] == 1 and action != None:
+                action()
+    else:
+        pygame.draw.rect(gameDisplay, ic,(x,y,w,h))
+
+    smallText = pygame.font.Font(os.path.join("data", "freesansbold.ttf"),20)
+    textSurf, textRect = text_objects(msg, smallText,black)
+    textRect.center = ( (x+(w/2)), (y+(h/2)) )
+    gameDisplay.blit(textSurf, textRect)
+
+
+
 def button(msg,x,y,w,h,ic,ac,action=None):
     mouse = pygame.mouse.get_pos()
     click = pygame.mouse.get_pressed()
+
     
     if x+w > mouse[0] > x and y+h > mouse[1] > y:
         pygame.draw.rect(gameDisplay, ac,(x,y,w,h))
 
         if click[0] == 1 and action != None:
-            action()         
+                action()
     else:
         pygame.draw.rect(gameDisplay, ic,(x,y,w,h))
 
@@ -194,20 +224,24 @@ def test():
 def buttons(msg,x,y,w,h,ic,ac,aktion,ex,ye,action=None):
     mouse = pygame.mouse.get_pos()
     click = pygame.mouse.get_pressed()
+    for event in pygame.event.get:
     
-    if x+w > mouse[0] > x and y+h > mouse[1] > y:
-        pygame.draw.rect(gameDisplay, ac,(x,y,w,h))
+        if x+w > mouse[0] > x and y+h > mouse[1] > y:
+            pygame.draw.rect(gameDisplay, ac,(x,y,w,h))
 
-        if click[0] == 1 and action != None:
-            action()
-            action2(ex,ye)
-    else:
-        pygame.draw.rect(gameDisplay, ic,(x,y,w,h))
+            if click[0] == 1 and action != None:
+                action()
+                action2(ex,ye)
+        else:
+            pygame.draw.rect(gameDisplay, ic,(x,y,w,h))
 
     smallText = pygame.font.Font("freesansbold.ttf",20)
     textSurf, textRect = text_objects(msg, smallText,black)
     textRect.center = ( (x+(w/2)), (y+(h/2)) )
     gameDisplay.blit(textSurf, textRect)
+
+
+
 
 
 
@@ -223,6 +257,8 @@ def op():
     time.sleep(3)
     if "Yes_Expo" in saveread:
 
+        game_intro()
+    if 'Yes_Tutorial' in saveread:
         game_intro()
     else:
         exposition()
@@ -257,6 +293,31 @@ def saveplayer():
         playerread = pickle.load(infile)
     print playerread
 
+def tutorial():
+
+
+    exposition = True
+
+    savefile.extend(['Yes_Tutorial'])
+    save()
+    print savefile
+
+
+    while exposition:
+        for event in pygame.event.get():
+            #print(event)
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
+
+        gameDisplay.fill(white)
+        gameDisplay.blit(controls,(0,0))
+
+        button(">",750,550,50,50,emerald,em,game_intro)
+        pygame.display.update()
+
+        clock.tick(15)
+
 
 
                 
@@ -281,10 +342,11 @@ def exposition():
         gameDisplay.fill(white)
         gameDisplay.blit(expo,(0,0))
         
-        button(">",750,550,50,50,emerald,em,game_intro)
+        button(">",750,550,50,50,emerald,em,tutorial)
         pygame.display.update()
         
         clock.tick(15)
+
 
 
 
@@ -334,20 +396,17 @@ def game_intro():
     
 
 def save_checker():
-    if "City1" in saveread:
+    if playerfile['town'] == 1:
 
         game_loop()
 
-    if "City2" in saveread:
+    if playerfile['town'] == 2:
         game_loop2()
-    if "City3" in saveread:
+    if playerfile['town'] == 3:
         game_loop3()
-    if "City4" in saveread:
+    if playerfile['town'] == 4:
         game_loop4()
-    else:
-        savefile.extend(['City1'])
-        save()
-        game_loop()
+
 
 
 
@@ -371,53 +430,61 @@ def say_(text):
 
 
 def heal():
+    global disable
     health = playerfile["Health"]
     maxhealth = playerfile["Maxhealth"]
+    potions = playerfile["Potions"]
     helth = health + 10
-    potin = playerfile["Potions"] - 1
-
-    if not playerread['Potions']  <= 0:
-        if health != maxhealth:
-            if health == 23123123:
-                print 'hax'
-
-            elif health + 10 > maxhealth:
-
-                for key,value in playerfile.items():
-                    playerfile["Health"] = maxhealth
-                    playerfile["Potions"] -= 1
+    potin = potions - 1
+    healsound = pygame.mixer.Sound(os.path.join("data", 'heal.ogg'))
 
 
-                healsound = pygame.mixer.Sound(os.path.join("data", 'heal.ogg'))
 
-                healsound.play()
-                inventory()
-            elif health + 10 < maxhealth:
+    if playerread['Potions']  >= 0 and health != maxhealth and disable != True:
+        potionamount = playerfile['Potions']
+        potionsub = potionamount - 1
 
-                for key,value in playerfile.items():
-                    playerfile["Health"] = helth
-                    playerfile["Potions"] -= 1
 
-                healsound = pygame.mixer.Sound(os.path.join("data", 'heal.ogg'))
+        if health + 10 < maxhealth:
+            for key,value in playerfile.items():
+                playerfile["Potions"] = potionsub
+                playerfile['Health'] = helth
+            saveplayer()
+            healsound.play()
+            disable = True
+            print 'healing 1'
+            inventory()
 
-                healsound.play()
-                inventory()
+        elif health + 10 > maxhealth:
+            difference = maxhealth - health
+            for key,value in playerfile.items():
+                playerfile["Potions"] = potionsub
+
+                playerfile['Health'] = maxhealth
+            disable = True
+            print 'healing 2'
+            healsound.play()
+            inventory()
         saveplayer()
-
-
-
         difference = 10
+        if disable == True:
+            inventory()
 
 
 
 def inventory():
+    global disable
     health = str(playerfile['Health'])
     maxhealth = str(playerfile['Maxhealth'])
     potions = str(playerfile['Potions'])
+    goldz = playerfile['Gold']
+    gould = 'Gold - %d' %goldz
     dmg = playerfile['Attackmin']
     dmeg = playerfile['Attackmax']
 
     damage = '  %d to %d' %(dmg,dmeg)
+    disable = False
+
 
 
 
@@ -435,7 +502,9 @@ def inventory():
         message_display(maxhealth,333,'freesansbold.ttf',20,black,233)
         message_display(damage,355,'freesansbold.ttf',20,black,218)
         message_display(potions,140,'freesansbold.ttf',20,black,470)
-        button('Use',500,130,50,50,emerald,em,heal)
+        message_display(gould,190,'freesansbold.ttf',20,gold,420)
+
+        button2('Use',500,130,50,50,emerald,em,heal)
 
 
         for event in pygame.event.get():
@@ -458,6 +527,17 @@ def inventory():
         pygame.display.update()
         clock.tick(15)
 
+def updatecheck():
+    y = playerfile['Y']
+    y -= 10
+    for key,value in playerfile.items():
+        playerfile["Y"] = y
+    saveplayer()
+
+
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
 
 
 
@@ -466,16 +546,18 @@ def inventory():
 
 
 
+                pygame.quit()
+                quit()
+
+        gameDisplay.fill(UI)
+        message_display('This part is not yet downloaded!',100,'freesansbold.ttf',40,red)
+        message_display('Check bokchoybuddhaboii.com for more info.',400,'freesansbold.ttf',38,black)
+        button('OK',350,500,100,50,emerald,em,save_checker)
+        pygame.display.update()
 
 
 
 
-
-
-
-    
-    
-        
 
 
 
@@ -607,6 +689,8 @@ def game_loop():
 
             pygame.display.update()
             clock.tick(15)
+            save()
+            saveplayer()
             
         
         
@@ -915,8 +999,11 @@ def game_loop():
             gameDisplay.blit(forward_player,(x,y))
         else:
             gameDisplay.blit(still,(x,y))
+        if 'oldguyfinal' in saveread:
+            gameDisplay.blit(layer2,(0,0))
+        else:
 
-        gameDisplay.blit(layer,(0,0))
+            gameDisplay.blit(layer,(0,0))
         #pygame.draw.rect(gameDisplay,red,(304,214,5,101))
         #pygame.draw.rect(gameDisplay,green,(462,214,5,101))
         #pygame.draw.rect(gameDisplay,white,(304,315,163,5))
@@ -947,20 +1034,26 @@ def game_loop():
 
         if y + car_height > display_height:
             if 'emperordefeated' in saveread:
-                savefile.remove('City1')
-                savefile.extend(['City3'])
-                save()
-                for key,value in playerfile.items():
-                    playerfile['X'] = x
-                    playerfile["Y"] = 0
-                saveplayer()
-                game_loop3()
+                try:
+                    import extension
+                    for key,value in playerfile.items():
+                        playerfile['X'] = x
+                        playerfile["Y"] = 0
+                    saveplayer()
+
+                    extension.game_loop3()
+                except:
+                    updatecheck()
+
+
+
+
             else:
                 y -= 8
         if y < 0:
-            savefile.remove('City1')
-            savefile.extend(['City2'])
-            save()
+            for key,value in playerfile.items():
+                playerfile['town'] = 2
+                saveplayer()
             if x < 192:
 
                 for key,value in playerfile.items():
@@ -996,7 +1089,7 @@ def game_loop():
         
 
         pygame.display.update()
-        clock.tick(60)
+        clock.tick(10)
 
 
 
@@ -1219,9 +1312,14 @@ def game_loop2():
                         damaged = True
                         damagedenemy = False
                 if potionrect.collidepoint(mouse[0],mouse[1]) and click[0] == 1:
-                    if not playerread['Potions']  <= 0 and health <= 0 and enemyhealth <= 0:
+                    print 'potions workx'
+                    if playerread['Potions']  >= 0:
+                        potionamount = playerfile['Potions']
+                        potionsub = potionamount - 1
+
+
                         for key,value in playerfile.items():
-                            playerfile["Potions"] -= 1
+                            playerfile["Potions"] = potionsub
                         difference = 10
                         health += 10
                         if health > maxhealth:
@@ -1256,17 +1354,26 @@ def game_loop2():
 
 
             if enemyhealth <= 0:
-                gameDiplay.blit(message,(0,400))
-                gold1 = random.randrange(enemydict['Goldmin'],enemydict['Goldmax'])
-                guld = '+ %d gold' %gold1
-                for key,value in playerfile.items():
-                        playerfile["Gold"] += gold
+                gameDisplay.blit(message,(0,400))
 
-                message_display(guld,500,'freesansbold.ttf',gold,400)
+                pre = playerfile['Gold']
+                for key,value in playerfile.items():
+                    gold1 = random.randrange(enemydict['Goldmin'],enemydict['Goldmax'])
+                    guld = '+ %d gold' %gold1
+
+                total = pre + gold1
+                for key,value in playerfile.items():
+
+                    playerfile["Gold"] = total
+
+                message_display(guld,500,'freesansbold.ttf',50,gold2,400)
+
                 pygame.display.update()
+
                 coins = pygame.mixer.Sound(os.path.join("data", 'coin.ogg'))
 
                 pygame.mixer.Sound.play(coins)
+                time.sleep(2)
 
 
                 savefile.extend([enemy])
@@ -1277,26 +1384,30 @@ def game_loop2():
                 pygame.mixer.music.fadeout(3000)
                 destination()
             if health <= 0:
-                gameDiplay.blit(message,(0,400))
-                gold1 = random.randrange(enemydict['Goldmin'],enemydict['Goldmax'])
-                guld = '+ %d gold' %gold1
-                for key,value in playerfile.items():
-                        playerfile["Gold"] += gold
 
-                message_display(guld,500,'freesansbold.ttf',gold,400)
-                pygame.display.update()
-                coins = pygame.mixer.Sound(os.path.join("data", 'coin.ogg'))
-                pygame.mixer.Sound.play(coins)
+
 
                 for key,value in playerfile.items():
                         playerfile["Health"] = maxhealth
                 saveplayer()
                 pygame.mixer.music.fadeout(3000)
-                savefile.extend(['City1'])
+
                 for key,value in playerfile.items():
                     playerfile["Y"] = 450
+                    playerfile['town'] = 1
 
                 save()
+                gameDisplay.blit(dead,(0,0))
+                pygame.display.update()
+
+
+
+                pygame.mixer.music.stop()
+                pygame.mixer.music.load(os.path.join("data", 'sad.mp3'))
+                pygame.mixer.music.play(-1)
+                time.sleep(15)
+
+
                 game_loop()
 
             
@@ -1601,11 +1712,10 @@ def game_loop2():
             x += 8
 
         if y + car_height > display_height:
-            savefile.remove('City2')
-            savefile.extend(['City1'])
-            save()
+
             for key,value in playerfile.items():
                 playerfile["Y"] = 0
+                playerfile['town'] = 1
 
             saveplayer()
             game_loop()
@@ -1660,616 +1770,11 @@ def game_loop2():
 
 
         pygame.display.update()
-        clock.tick(65)
+        clock.tick(10)
 
 
-def game_loop3():
-    pygame.mixer.music.fadeout(500)
 
 
-    print playerread['Y']
-    x = playerread['X']
-    if playerread['Y'] != display_height - car_height:
-
-        y = playerread['Y']
-    else:
-        y = 0
-
-    pygame.mixer.music.load(os.path.join("data", 'german.mp3'))
-    pygame.mixer.music.play(-1)
-
-
-    x_change = 0
-    y_change = 0
-    zero = 0
-    gameExit = False
-
-    xleft = 38
-    xright = 167
-    ytop = 161
-    ybottom = 322
-    left_images = []
-    left_images.append( pygame.image.load(os.path.join("data", 'left1.png') ))
-    left_images.append( pygame.image.load(os.path.join("data", 'left2.png') ))
-    left_images.append( pygame.image.load(os.path.join("data", 'left3.png') ))
-    right_images = []
-    right_images.append( pygame.image.load(os.path.join("data", 'right1.png') ))
-    right_images.append( pygame.image.load(os.path.join("data", 'right2.png') ))
-    right_images.append( pygame.image.load(os.path.join("data", 'right3.png') ))
-    forward_images = []
-    forward_images.append( pygame.image.load(os.path.join("data", 'forward1.png') ))
-    forward_images.append( pygame.image.load(os.path.join("data", 'forward2.png') ))
-    forward_images.append( pygame.image.load(os.path.join("data", 'forward3.png') ))
-    back_images = []
-    back_images.append( pygame.image.load(os.path.join("data",'back1.png') ))
-    back_images.append( pygame.image.load(os.path.join("data", 'back2.png') ))
-    back_images.append( pygame.image.load(os.path.join("data", 'back3.png') ))
-    left_current = 1
-    right_current = 0
-    forward_current = 0
-    back_current = 0
-
-    left_walking = True
-    left_walking_steps = 0
-    left_current = (left_current + 1) % len(left_images)
-    left_player = left_images[ left_current ]
-
-    right_walking = False
-    right_walking_steps = 0
-    right_current = (right_current + 1) % len(right_images)
-    right_player = right_images[ right_current ]
-
-    forward_walking = False
-    forward_walking_steps = 0
-    forward_current = (forward_current + 1) % len(forward_images)
-    forward_player = forward_images[ forward_current ]
-
-    back_walking = False
-    back_walking_steps = 0
-    back_current = (back_current + 1) % len(back_images)
-    back_player = back_images[ back_current ]
-
-    def buttonwiththreeargs(msg,x,y,w,h,ic,ac,action,arg1,arg2,arg3,arg4):
-        mouse = pygame.mouse.get_pos()
-        click = pygame.mouse.get_pressed()
-
-        if x+w > mouse[0] > x and y+h > mouse[1] > y:
-            pygame.draw.rect(gameDisplay, ac,(x,y,w,h))
-
-            if click[0] == 1:
-                action(arg1,arg2,arg3,arg4)
-        else:
-            pygame.draw.rect(gameDisplay, ic,(x,y,w,h))
-
-        smallText = pygame.font.Font("freesansbold.ttf",20)
-        textSurf, textRect = text_objects(msg, smallText,black)
-        textRect.center = ( (x+(w/2)), (y+(h/2)) )
-        gameDisplay.blit(textSurf, textRect)
-    def store():
-
-        saveplayer()
-
-        yessiree = True
-        while yessiree:
-            for event in pygame.event.get():
-
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    quit()
-
-
-
-
-
-            gameDisplay.fill(white)
-            if 'schnitzel' in saveread:
-                gameDisplay.blit(storeimg2,(0,0))
-
-                button('>',750,550,50,50,em,emerald,game_loop2)
-                save()
-                for key,value in playerfile.items():
-                    playerfile["Y"] += 10
-                saveplayer()
-
-            if 'schnitzel' not in saveread:
-                gameDisplay.blit(storeimg,(0,0))
-
-                buttonwiththreeargs('Fight',750,550,50,50,em,emerald,battle,'emperordefeated',battleemperor,emperordict,emperor)
-                button('Later',0,550,50,50,em,emerald,game_loop2)
-                for key,value in playerfile.items():
-                    playerfile["Y"] += 10
-                saveplayer()
-
-            print playerfile['Y']
-            pygame.display.update()
-            clock.tick(15)
-    def battle(enemy,battleperson,enemydict,destination):
-
-
-
-
-
-        if "dojocompletejnwwjw" in saveread:
-            attackmin = playerfile["Attackmin"] + 10
-            attackmax = playerfile["Attackmax"] + 10
-            health = playerfile["Health"] * 2
-            maxhealth = playerfile["Maxhealth"] * 2
-        else:
-            attackmin = playerfile["Attackmin"]
-            attackmax = playerfile["Attackmax"]
-            health = playerfile["Health"]
-            maxhealth = playerfile["Maxhealth"]
-        damage = random.randrange(attackmin,attackmax)
-        enemyhealth = enemydict["Health"]
-        enemymaxhealth = enemydict["Health"]
-        enemyattackmin = enemydict["Attackmin"]
-        enemyattackmax = enemydict["Attackmax"]
-        enemydamage = random.randrange(enemyattackmin,enemyattackmax)
-        mouse = pygame.mouse.get_pos()
-        click = pygame.mouse.get_pressed()
-        swordsound = pygame.mixer.Sound(os.path.join("data", 'sword.ogg'))
-        damagesound = pygame.mixer.Sound(os.path.join("data", 'damagesound.ogg'))
-        healsound = pygame.mixer.Sound(os.path.join("data", 'heal.ogg'))
-
-        attackrect = pygame.Rect(330,407,136,30)
-        damagedenemy = False
-        timerenemy = 1000
-        placeofhold = False
-        potionrect = pygame.Rect(333,506,136,30)
-
-
-
-
-
-
-
-
-
-
-        while True:
-
-            mouse =  pygame.mouse.get_pos()
-            click = pygame.mouse.get_pressed()
-            damage = random.randrange(attackmin,attackmax)
-            enemydamage = random.randrange(enemyattackmin,enemyattackmax)
-            enemytotal = "%d / %d" % (enemyhealth,enemymaxhealth)
-            healthtotal = "%d / %d" % (health,maxhealth)
-
-
-
-
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    quit()
-
-
-
-                if attackrect.collidepoint(mouse[0],mouse[1]) and click[0] == 1:
-
-
-
-                    print "clicked"
-                    placeofhold = True
-
-                    enemyhealth -= damage
-
-                    print "took away enemy health"
-
-                    swordsound = pygame.mixer.Sound(os.path.join("data", 'sword.ogg'))
-
-
-                    pygame.mixer.Sound.play(swordsound)
-                    blitdamage(damage)
-
-
-
-                    damagedenemy = True
-
-
-
-                    if damagedenemy == True and health > 0:
-                        time.sleep(1.5)
-                        placeofhold = False
-                        damagesound = pygame.mixer.Sound(os.path.join("data", 'damagesound.ogg'))
-                        health -= enemydamage
-                        pygame.mixer.Sound.play(damagesound)
-                        blitenemydamage(enemydamage)
-                        print "took away health"
-
-                        damaged = True
-                        damagedenemy = False
-                if potionrect.collidepoint(mouse[0],mouse[1]) and click[0] == 1:
-                    if not playerread['Potions']  <= 0 and health <= 0 and enemyhealth <= 0:
-                        for key,value in playerfile.items():
-                            playerfile["Potions"] -= 1
-                        difference = 10
-                        health += 10
-                        if health > maxhealth:
-                            difference = maxhealth - health
-                            health = maxhealth
-
-                        healsound.play()
-                        blitheal(difference)
-                        damagedenemy = True
-
-
-
-                        if damagedenemy == True:
-                            time.sleep(1.5)
-                            placeofhold = False
-                            damagesound = pygame.mixer.Sound(os.path.join("data", 'damagesound.mp3'))
-                            health -= enemydamage
-                            blitenemydamageafterheal(enemydamage)
-
-                            damagesound.play()
-                            damaged = True
-                            damagedenemy = False
-
-
-
-
-
-
-
-
-
-
-
-            if enemyhealth <= 0:
-                savefile.extend([enemy])
-                save()
-                for key,value in playerfile.items():
-                            playerfile["Health"] = health
-                saveplayer()
-                pygame.mixer.music.fadeout(1000)
-                destination()
-            if health <= 0:
-                for key,value in playerfile.items():
-                        playerfile["Health"] = maxhealth
-                saveplayer()
-                pygame.mixer.music.fadeout(1000)
-                savefile.extend(['City1'])
-                for key,value in playerfile.items():
-                    playerfile["Y"] = 450
-
-                save()
-                game_loop()
-
-
-            #pygame.draw.rect(gameDisplay,green,(330,407,136,30))
-
-
-
-            enemytotal = "%d / %d" % (enemyhealth,enemymaxhealth)
-            healthtotal = "%d / %d" % (health,maxhealth)
-            gameDisplay.fill(black)
-            gameDisplay.blit(battlebackground,(0,0))
-            gameDisplay.blit(battleperson,(22,132))
-            message_display(healthtotal,440,'freesansbold.ttf',20,black,760)
-
-
-            pygame.display.update()
-
-            #return damage
-
-
-
-            def blitdamage(damage):
-                minusdamage = "-%d" %damage
-                message_display(minusdamage,100,'freesansbold.ttf',30,red,50)
-                pygame.display.update()
-                clock.tick(60)
-
-            def blitenemydamage(enemydamage):
-
-                timer = 100
-                while timer > 1:
-                    minusdamage = "-%d" %enemydamage
-                    message_display(minusdamage,100,'freesansbold.ttf',30,red,750)
-                    timer -= 1
-                    pygame.display.update()
-                    clock.tick(60)
-            def blitheal(amount):
-
-                timer = 100
-                while timer > 1:
-                    minusdamage = "+%d" %amount
-                    message_display(minusdamage,100,'freesansbold.ttf',30,green,750)
-                    timer -= 1
-                    pygame.display.update()
-                    clock.tick(60)
-            def blitenemydamageafterheal(enemydamage):
-
-                timer = 100
-                while timer > 1:
-                    minusdamage = "-%d" %enemydamage
-                    message_display(minusdamage,100,'freesansbold.ttf',30,red,700)
-                    timer -= 1
-                    pygame.display.update()
-                    clock.tick(60)
-
-
-
-
-
-
-
-
-
-    while not gameExit:
-
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                quit()
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_a:
-
-                    x_change = -8
-                    left_walking = True
-                    left_walking_steps = 5
-
-                if event.key == pygame.K_d:
-
-                    x_change = 8
-                    right_walking = True
-                    right_walking_steps = 5
-
-
-                if event.key == pygame.K_w:
-
-
-                    y_change = -8
-                    forward_walking = True
-                    forward_walking_steps = 5
-
-
-
-                if event.key == pygame.K_s:
-
-                    y_change = 8
-                    back_walking = True
-                    back_walking_steps = 5
-                if event.key == pygame.K_ESCAPE:
-
-                    inventory()
-
-
-
-            if event.type == pygame.KEYUP:
-                if event.key == pygame.K_a or event.key == pygame.K_d:
-                    x_change = 0
-                    left_current = 1
-                    left_walking = False
-                    right_walking = False
-                    saveplayer()
-
-
-                if event.key == pygame.K_w or event.key == pygame.K_s:
-                    y_change = 0
-                    forward_walking = False
-                    back_walking = False
-                    if y + car_height > display_height:
-
-                        saveplayer()
-
-
-
-
-
-        #print 'Player - ' + str(x) + ',' + str(y)
-        gameDisplay.fill(white)
-        gameDisplay.blit(germantown,(0,0))
-        #print 'GAME 2222222222'
-
-
-        if left_walking == True:
-
-            if left_walking_steps > 0:
-                left_current = (left_current + 1) % len(left_images)
-                left_player = left_images[ left_current ]
-
-
-                if left_current == 3:
-                    left_current
-            else:
-                left_walking = False
-
-
-
-
-
-        if right_walking == True:
-
-            if right_walking_steps > 0:
-                right_current = (right_current + 1) % len(right_images)
-                right_player = right_images[ right_current ]
-
-
-
-            else:
-                right_walking = False
-
-        if forward_walking == True:
-
-            if forward_walking_steps > 0:
-                forward_current = (forward_current + 1) % len(forward_images)
-                forward_player = forward_images[ forward_current ]
-
-
-
-            else:
-                forward_walking = False
-
-
-        if back_walking == True:
-
-            if back_walking_steps > 0:
-                back_current = (back_current + 1) % len(back_images)
-                back_player = back_images[ back_current ]
-
-
-
-            else:
-                back_walking = False
-
-
-        charRect = pygame.Rect(x,y,car_width,car_height)
-        schnitzeltop = pygame.Rect(288,205,229,8)
-        schnitzelleft = pygame.Rect(288,214,8,146)
-        schnitzelright = pygame.Rect(509,214,8,146)
-        schnitzelbottom1 = pygame.Rect(296,351,82,8)
-        schnitzelbottom2 = pygame.Rect(422,351,87,8)
-        schnitzeldoor = pygame.Rect(378,351,44,8)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        if schnitzeltop.collidepoint(x,y+car_height) or schnitzeltop.collidepoint(x + car_width,y+car_height):
-
-            y -= 8
-
-        if schnitzelbottom1.collidepoint(x,y) or schnitzelbottom1.collidepoint(x + car_width,y) or schnitzelbottom2.collidepoint(x,y) or schnitzelbottom2.collidepoint(x + car_width,y):
-
-            y += 8
-
-        if schnitzelleft.collidepoint(x + car_width,y) or schnitzelleft.collidepoint(x+car_width,y + car_height):
-            x-=8
-        if schnitzelright.collidepoint(x,y) or schnitzelright.collidepoint(x,y + car_height):
-            x += 8
-
-
-        if schnitzeldoor.collidepoint(x,y) or schnitzeldoor.collidepoint(x + car_width,y):
-            store()
-
-
-
-
-
-
-
-
-
-
-        left_walking == True
-
-        if left_walking == True:
-
-            gameDisplay.blit(left_player,(x,y))
-
-        elif right_walking == True:
-
-            gameDisplay.blit(right_player,(x,y))
-
-        elif back_walking == True:
-
-            gameDisplay.blit(back_player,(x,y))
-        elif forward_walking == True:
-
-            gameDisplay.blit(forward_player,(x,y))
-        else:
-            gameDisplay.blit(still,(x,y))
-
-
-
-
-        #pygame.draw.rect(gameDisplay,green,(288,205,229,8))
-        #pygame.draw.rect(gameDisplay,red,(288,214,8,146))
-        #pygame.draw.rect(gameDisplay,UI,(509,214,8,146))
-
-        #pygame.draw.rect(gameDisplay,green,(296,351,82,8))
-        #pygame.draw.rect(gameDisplay,green,(422,351,87,8))
-
-        #pygame.draw.rect(gameDisplay,red,(378,351,44,8))
-
-
-
-
-
-
-
-
-
-
-
-        mouse = pygame.mouse.get_pos()
-
-        print mouse
-
-
-
-
-
-
-
-
-
-        if x > display_width- car_width:
-            x -= 8
-
-        if x < 0:
-            if 'schnitzel' in saveread:
-
-                for key,value in playerfile.items():
-                    playerfile["X"] = display_width - car_width
-                savefile.remove('City3')
-                savefile.extend(['City4'])
-                save()
-
-                saveplayer()
-                game_loop4()
-            else:
-                x += 8
-
-        if y + car_height > display_height:
-            y-=8
-
-
-
-
-        if y < 0:
-            for key,value in playerfile.items():
-                playerfile["X"] = x
-                playerfile["Y"] = display_height - car_height
-                savefile.remove('City3')
-                savefile.extend(['City1'])
-                save()
-
-                saveplayer()
-                game_loop()
-
-
-        x += x_change
-        y += y_change
-        for key,value in playerfile.items():
-            playerfile["X"] = x
-            playerfile["Y"] = y
-
-
-
-
-
-
-
-
-        pygame.display.update()
-        clock.tick(65)
-
-
-
-
-        
 
 
 op()
